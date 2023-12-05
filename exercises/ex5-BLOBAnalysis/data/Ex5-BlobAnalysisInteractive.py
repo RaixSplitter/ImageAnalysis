@@ -12,8 +12,9 @@ pio.renderers.default = 'browser'
 def interactive_blobs():
     in_dir = "data/"
     im_name = "lego_4_small.png"
-
-    img_org = io.imread(in_dir + im_name)
+    img_path = "C:/Programmering/DTU/ImageAnalysis/exercises/ex5-BLOBAnalysis/data/lego_4_small.png"
+    # img_org = io.imread(in_dir + im_name)
+    img_org = io.imread(img_path)
     img = color.rgb2gray(img_org)
     # Binary image, post-process the binary mask and compute labels
     threshold = filters.threshold_otsu(img)
