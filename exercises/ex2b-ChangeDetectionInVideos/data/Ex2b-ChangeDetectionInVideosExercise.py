@@ -15,6 +15,12 @@ def show_in_moved_window(win_name, img, x, y):
 
 
 def capture_from_camera_and_show_images():
+    
+    ALPHA = 0.95
+    THRESHOLD = 0.1
+    ALERT_THRESHOLD = 0.05
+    ALERT = False
+    
     print("Starting image capture")
 
     print("Opening connection to camera")
@@ -39,7 +45,10 @@ def capture_from_camera_and_show_images():
     # Transform image to gray scale and then to float, so we can do some processing
     frame_gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
     frame_gray = img_as_float(frame_gray)
-
+    
+    # Init background image
+    bg_img = frame_gray
+    
     # To keep track of frames per second
     start_time = time.time()
     n_frames = 0
@@ -56,6 +65,29 @@ def capture_from_camera_and_show_images():
 
         # Compute difference image
         dif_img = np.abs(new_frame_gray - frame_gray)
+        
+        # bg image
+        bg_img = ALPHA * bg_img + (1 - ALPHA) * new_frame_gray
+        
+        # Compute difference image
+        dif_bg_img = np.abs(new_frame_gray - bg_img)
+        
+        # Binary Threshhold
+        # If pixel value do not meet threshold, set to 0 (black) else set to 1 (white)
+        b_img = np.zeros(dif_bg_img.shape)
+        b_img[dif_bg_img > THRESHOLD] = 1
+        
+        # Count the number of pixels above threshold
+        n_F = np.sum(b_img)
+        
+        # Compute the number of foreground pixels n_F divided by the total number of pixels
+        p_F = n_F / (b_img.shape[0] * b_img.shape[1])
+        
+        # If p_F is above ALERT_THRESHOLD, then we have a change
+        ALERT = p_F > ALERT_THRESHOLD
+        
+        
+        
 
         # Keep track of frames-per-second (FPS)
         n_frames = n_frames + 1
@@ -65,12 +97,35 @@ def capture_from_camera_and_show_images():
         # Put the FPS on the new_frame
         str_out = f"fps: {fps}"
         font = cv2.FONT_HERSHEY_COMPLEX
-        cv2.putText(new_frame, str_out, (100, 100), font, 1, 255, 1)
-
+        cv2.putText(new_frame, str_out, (50, 50), font, 1, 255, 1)
+        
+        # If ALERT is true, then we have a change
+        
+        if ALERT:
+            str_out = f"Change Detected!"
+            cv2.putText(new_frame, str_out, (50, 100), font, 1, (0, 0, 255), 1)
+        else:
+            str_out = f"No change"
+            cv2.putText(new_frame, str_out, (50, 100), font, 1, (0, 255, 0), 1)
+            
+        # Stats
+        mu = dif_img.mean()
+        sigma = dif_img.std()
+        min_val = dif_img.min()
+        max_val = dif_img.max()
+        
+        str_out1 = f"mu: {mu:.2f} sigma: {sigma:.2f}"
+        str_out2 = f"min: {min_val:.2f} max: {max_val:.2f}"
+        cv2.putText(new_frame, str_out1, (50, 150), font, 1, 255, 1)
+        cv2.putText(new_frame, str_out2, (50, 200), font, 1, 255, 1)
+        
         # Display the resulting frame
         show_in_moved_window('Input', new_frame, 0, 10)
         show_in_moved_window('Input gray', new_frame_gray, 600, 10)
         show_in_moved_window('Difference image', dif_img, 1200, 10)
+        show_in_moved_window('Background image', bg_img, 0, 510)
+        show_in_moved_window('Difference bg image', dif_bg_img, 600, 510)
+        show_in_moved_window('Binary Image', b_img, 1200, 510)
 
         # Old frame is updated
         frame_gray = new_frame_gray
