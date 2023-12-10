@@ -160,4 +160,5 @@ cython_debug/
 #.idea/
 
 
-dataset/*
+exercises/ex8-CatsCatsCats/data/preprocessed_data/*
+exercises/ex8-CatsCatsCats/data/training_cats_100/*
